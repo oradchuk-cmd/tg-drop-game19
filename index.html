@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CraftAce - Full Game & Leaderboard</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1e1e2f, #11111d);
+      color: #fff;
+      text-align: center;
+      padding: 10px;
+      margin: 0;
+      user-select: none;
+    }
+    h1 { margin: 5px 0; color: #f39c12; font-size: 20px; }
+    
+    .balance-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 10px;
+      margin: 8px auto;
+      max-width: 340px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-around;
+      font-size: 14px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .nav-btn {
+      background: #2a2a40;
+      color: #ccc;
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 6px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .nav-btn.active { background: #f39c12; color: #111; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Кликер */
+    .click-coin {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffe066, #f39c12);
+      margin: 15px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+      box-shadow: 0 0 20px rgba(243, 156, 18, 0.5);
+      cursor: pointer;
+    }
+    .click-coin:active { transform: scale(0.92); }
+
+    /* Краш Игра с Батискафом */
+    .crash-box {
+      width: 240px;
+      height: 150px;
+      background: linear-gradient(180deg, #1b2735 0%, #090a0f 100%);
+      border: 3px solid #f39c12;
+      border-radius: 15px;
+      margin: 10px auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .crash-ship { 
+      font-size: 45px; 
+      transition: transform 0.2s ease-in-out;
+      display: inline-block;
+    }
+    .crash-ship.swimming {
+      animation: floatSubmarine 1.5s infinite ease-in-out alternate;
+    }
+    @keyframes floatSubmarine {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-8px) rotate(-3deg); }
+      100% { transform: translateY(5px) rotate(3deg); }
+    }
+
+    .bubble {
+      position: absolute;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 12px;
+      animation: rise 1s infinite linear;
+    }
+    @keyframes rise {
+      0% { bottom: 10px; opacity: 1; transform: translateX(0); }
+      100% { bottom: 120px; opacity: 0; transform: translateX(10px); }
+    }
+
+    .crash-mult { font-size: 28px; font-weight: bold; color: #2ecc71; margin-top: 5px; z-index: 2; }
+
+    /* Контейнеры */
+    .box-container {
+      background: rgba(0,0,0,0.3);
+      padding: 15px;
+      border-radius: 12px;
+      max-width: 330px;
+      margin: 0 auto;
+    }
+    select, input {
+      width: 90%;
+      padding: 8px;
+      margin: 6px 0;
+      border-radius: 8px;
+      background: #2a2a40;
+      color: #fff;
+      border: 1px solid #f39c12;
+      text-align: center;
+    }
+
+    .grid-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      max-height: 250px;
+      overflow-y: auto;
+      padding: 5px;
+    }
+    .card-item {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 8px;
+      width: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 10px;
+    }
+    .card-item span { font-size: 24px; }
+
+    .leader-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      margin: 4px 0;
+      font-size: 13px;
+    }
+
+    button.btn-main {
+      background: #f39c12;
+      color: #111;
+      border: none;
+      padding: 10px 18px;
+      font-weight: bold;
+      border-radius: 15px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button.btn-cashout { background: #27ae60; color: #fff; }
+    .btn-sell { background: #e74c3c; color: #fff; border: none; border-radius: 8px; padding: 3px 6px; font-size: 10px; margin-top: 4px; }
+    .btn-buy { background: #27ae60; color: #fff; border: none; border-radius: 8px; padding: 4px 8px; font-size: 10px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+  <h1>CraftAce Game 🥽💥</h1>
+  
+  <div class="balance-card">
+    <div>🪙 <b id="tokens">21.0</b></div>
+    <div>🎁 Попытки: <b id="freeSpins">3</b>/3</div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-btn active" id="btn-crash" onclick="switchTab('crash')">🥽 Краш</button>
+    <button class="nav-btn" id="btn-clicker" onclick="switchTab('clicker')">👆 Кликер</button>
+    <button class="nav-btn" id="btn-case" onclick="switchTab('case')">📦 Кейс</button>
+    <button class="nav-btn" id="btn-upgrader" onclick="switchTab('upgrader')">⚡ Апгрейд</button>
+    <button class="nav-btn" id="btn-promo" onclick="switchTab('promo')">🎟️ Промо</button>
+    <button class="nav-btn" id="btn-shop" onclick="switchTab('shop')">🛒 Салон</button>
+    <button class="nav-btn" id="btn-inventory" onclick="switchTab('inventory')">🎒 Инвентарь</button>
+    <button class="nav-btn" id="btn-leaders" onclick="switchTab('leaders')">🏆 Лидеры</button>
+  </div>
+
+  <!-- КРАШ ИГРА С БАТИСКАФОМ -->
+  <div id="tab-crash" class="tab-content active">
+    <div class="crash-box" id="crashBox">
+      <div class="crash-ship" id="crashShip">🥽</div>
+      <div class="crash-mult" id="crashMult">1.00x</div>
+    </div>
+    <div id="crashInputBox" style="margin-bottom: 5px;">
+      <label style="font-size: 12px; color: #ccc;">Ставка (🪙):</label><br>
+      <input type="number" id="crashBetInput" value="25" min="1" style="width: 120px; font-weight: bold;">
+    </div>
+    <div id="crashControls">
+      <button class="btn-main" id="startCrashBtn" onclick="startCrash()">Погружение</button>
+    </div>
+  </div>
+
+  <!-- КЛИКЕР -->
+  <div id="tab-clicker" class="tab-content">
+    <p>Кликай и забирай +0.2 🪙 за тап!</p>
+    <div class="click-coin" onclick="doClick()">🪙</div>
+  </div>
+
+  <!-- CRAFT КЕЙС -->
+  <div id="tab-case" class="tab-content">
+    <div class="crash-box" style="width:140px; height:120px;" id="caseIcon">📦</div>
+    <b id="caseName">Craft Case</b><br>
+    <button class="btn-main" id="openCaseBtn" onclick="openCraftCase()">Открыть (15 🪙)</button>
+  </div>
+
+  <!-- АПГРЕЙДЕР -->
+  <div id="tab-upgrader" class="tab-content">
+    <div class="box-container">
+      <b>Ставишь:</b> <select id="upgradeFrom" onchange="calcChance()"></select>
+      <b>Цель:</b> <select id="upgradeTo" onchange="calcChance()"></select>
+      <div style="margin: 8px 0; color: #f39c12;">Шанс: <b id="chanceVal">0%</b></div>
+      <button class="btn-main" onclick="runUpgrade()">⚡ Апгрейд!</button>
+    </div>
+  </div>
+
+  <!-- ПРОМОКОДЫ -->
+  <div id="tab-promo" class="tab-content">
+    <div class="box-container">
+      <h3>🎟️ Введи промокод:</h3>
+      <input type="text" id="promoInput" placeholder="CraftAce / Dan11l">
+      <button class="btn-main" onclick="claimPromo()">Активировать (+50 🪙)</button>
+    </div>
+  </div>
+
+  <!-- МАГАЗИН -->
+  <div id="tab-shop" class="tab-content"><div class="grid-container" id="shopGrid"></div></div>
+
+  <!-- ИНВЕНТАРЬ -->
+  <div id="tab-inventory" class="tab-content"><div class="grid-container" id="inventoryGrid"></div></div>
+
+  <!-- СПИСОК ЛИДЕРОВ -->
+  <div id="tab-leaders" class="tab-content">
+    <div class="box-container" id="leadersList"></div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) tg.expand();
+
+    const rawUsername = tg?.initDataUnsafe?.user?.username || 'Игрок';
+    const currentUser = rawUsername.toLowerCase();
+    const isVipUser = currentUser === 'daniil_1000';
+
+    let tokens = parseFloat(localStorage.getItem('tokens')) || 21.0;
+    let freeSpins = parseInt(localStorage.getItem('freeSpins')) || 3;
+    let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+    let usedPromos = JSON.parse(localStorage.getItem('usedPromos')) || [];
+
+    let crashInterval = null;
+    let bubbleInterval = null;
+    let currentMult = 1.00;
+    let crashPoint = 1.00;
+    let isPlayingCrash = false;
+    let currentBet = 25;
+
+    const promoCodes = { 'craftace': 50, 'dan1
